@@ -17,7 +17,3 @@ parameters:
     message: "#^.* will always evaluate to true\\.$#"
     count: 4
     path: tests/*
-  -
-    message: "#^Left side of || is always false.$#"
-    count: 23
-    path: lib/Client.php
