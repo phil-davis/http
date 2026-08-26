@@ -560,7 +560,7 @@ class ClientMock extends Client
      *
      * This method exists so that it can easily be overridden and mocked.
      *
-     * @param resource $curlHandle
+     * @param \CurlHandle $curlHandle
      */
     protected function curlStuff($curlHandle): array
     {
@@ -581,7 +581,7 @@ class ClientMock extends Client
      *
      * This method exists so that it can easily be overridden and mocked.
      *
-     * @param resource $curlHandle
+     * @param \CurlHandle $curlHandle
      */
     protected function curlExec($curlHandle): string
     {

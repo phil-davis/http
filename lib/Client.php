@@ -149,14 +149,17 @@ class Client extends EventEmitter
                 // If retry was still set to false, it means no event handler
                 // dealt with the problem. In this case we just re-throw the
                 // exception.
+                // @phpstan-ignore booleanNot.alwaysTrue
                 if (!$retry) {
                     throw $e;
                 }
             }
 
+            // @phpstan-ignore if.alwaysFalse
             if ($retry) {
                 ++$retryCount;
             }
+            // @phpstan-ignore booleanOr.leftAlwaysFalse
         } while ($retry || $doRedirect);
 
         $this->emit('afterRequest', [$request, $response]);
@@ -228,6 +231,7 @@ class Client extends EventEmitter
                     $e = new ClientException($curlResult['curl_errmsg'], $curlResult['curl_errno']);
                     $this->emit('exception', [$request, $e, &$retry, $retryCount]);
 
+                    // @phpstan-ignore if.alwaysFalse
                     if ($retry) {
                         ++$retryCount;
                         $this->sendAsyncInternal($request, $successCallback, $errorCallback, $retryCount);
@@ -236,6 +240,7 @@ class Client extends EventEmitter
 
                     $curlResult['request'] = $request;
 
+                    // @phpstan-ignore function.alreadyNarrowedType
                     if (is_callable($errorCallback)) {
                         $errorCallback($curlResult);
                     }
@@ -243,6 +248,7 @@ class Client extends EventEmitter
                     $this->emit('error', [$request, $curlResult['response'], &$retry, $retryCount]);
                     $this->emit('error:'.$curlResult['http_code'], [$request, $curlResult['response'], &$retry, $retryCount]);
 
+                    // @phpstan-ignore if.alwaysFalse
                     if ($retry) {
                         ++$retryCount;
                         $this->sendAsyncInternal($request, $successCallback, $errorCallback, $retryCount);
@@ -251,12 +257,14 @@ class Client extends EventEmitter
 
                     $curlResult['request'] = $request;
 
+                    // @phpstan-ignore function.alreadyNarrowedType
                     if (is_callable($errorCallback)) {
                         $errorCallback($curlResult);
                     }
                 } else {
                     $this->emit('afterRequest', [$request, $curlResult['response']]);
 
+                    // @phpstan-ignore function.alreadyNarrowedType
                     if (is_callable($successCallback)) {
                         $successCallback($curlResult['response']);
                     }
@@ -299,7 +307,7 @@ class Client extends EventEmitter
      *
      * These settings will be included in every HTTP request.
      */
-    public function addCurlSetting(int $name, $value): void
+    public function addCurlSetting(int $name, mixed $value): void
     {
         $this->curlSettings[$name] = $value;
     }
@@ -311,10 +319,10 @@ class Client extends EventEmitter
     {
         $settings = $this->createCurlSettingsArray($request);
 
-        if (null === $this->curlHandle) {
-            $this->curlHandle = curl_init();
-        } else {
+        if (isset($this->curlHandle)) {
             curl_reset($this->curlHandle);
+        } else {
+            $this->curlHandle = curl_init();
         }
 
         curl_setopt_array($this->curlHandle, $settings);
@@ -332,17 +340,15 @@ class Client extends EventEmitter
      *
      * By keeping this resource around for the lifetime of this object, things
      * like persistent connections are possible.
-     *
-     * @var resource|null
      */
-    private $curlHandle;
+    private \CurlHandle $curlHandle;
 
     /**
      * Handler for curl_multi requests.
      *
      * The first time sendAsync is used, this will be created.
      *
-     * @var resource|null
+     * @var \CurlMultiHandle|null
      */
     private $curlMultiHandle;
 
@@ -382,6 +388,7 @@ class Client extends EventEmitter
                     // reason.
                     $settings[CURLOPT_PUT] = true;
                     $settings[CURLOPT_INFILE] = $body;
+                    // @phpstan-ignore function.alreadyNarrowedType
                     if (false !== $bodyStat && array_key_exists('size', $bodyStat)) {
                         $settings[CURLOPT_INFILESIZE] = $bodyStat['size'];
                     }
@@ -426,7 +433,7 @@ class Client extends EventEmitter
     public const STATUS_HTTPERROR = 2;
 
     /**
-     * @param resource $curlHandle
+     * @param \CurlHandle $curlHandle
      *
      * @return mixed[]
      */
@@ -466,7 +473,7 @@ class Client extends EventEmitter
      *                 status is STATUS_SUCCESS, or STATUS_HTTPERROR
      *
      * @param array<int, string> $headerLines
-     * @param resource           $curlHandle
+     * @param \CurlHandle        $curlHandle
      *
      * @return array<string, mixed>
      */
@@ -523,7 +530,7 @@ class Client extends EventEmitter
      *
      * @deprecated Use parseCurlResponse instead
      *
-     * @param resource $curlHandle
+     * @param \CurlHandle $curlHandle
      *
      * @return array<string, mixed>
      */
@@ -548,6 +555,7 @@ class Client extends EventEmitter
         // This will cause substr($response, $curlInfo['header_size']) return FALSE instead of NULL
         // An exception will be thrown when calling getBodyAsString then
         $responseBody = substr($response, $curlInfo['header_size']);
+        // @phpstan-ignore identical.alwaysFalse
         if (false === $responseBody) {
             $responseBody = '';
         }
@@ -603,7 +611,7 @@ class Client extends EventEmitter
      *
      * This method exists so that it can easily be overridden and mocked.
      *
-     * @param resource $curlHandle
+     * @param \CurlHandle $curlHandle
      */
     protected function curlExec($curlHandle): string
     {
@@ -622,7 +630,7 @@ class Client extends EventEmitter
      *
      * This method exists so that it can easily be overridden and mocked.
      *
-     * @param resource $curlHandle
+     * @param \CurlHandle $curlHandle
      *
      * @return array<int, mixed>
      */
